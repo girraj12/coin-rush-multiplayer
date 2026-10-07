@@ -1,0 +1,1109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Coin Rush - Multiplayer</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #101522;
+      color: #eef2ff;
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 9px;
+      padding: 12px 18px;
+      background: #4f7cff;
+      color: #ffffff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #3e6ced;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    input {
+      width: 100%;
+      background: #0e1422;
+      border: 1px solid #33405e;
+      color: #ffffff;
+      border-radius: 9px;
+      padding: 12px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #4f7cff;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .brand {
+      font-size: 25px;
+      font-weight: 800;
+    }
+
+    .status {
+      font-size: 13px;
+      color: #9ca9c8;
+    }
+
+    .panel {
+      background: #171e30;
+      border: 1px solid #29334d;
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .join {
+      max-width: 480px;
+      margin: 90px auto;
+    }
+
+    .join h1 {
+      margin-top: 0;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .error {
+      color: #ff8d8d;
+      min-height: 20px;
+      margin-top: 10px;
+    }
+
+    .game {
+      display: grid;
+      grid-template-columns: 1fr 270px;
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .canvasWrap {
+      background: #0b101b;
+      border-radius: 14px;
+      padding: 10px;
+      border: 1px solid #29334d;
+    }
+
+    .gamecanvas {
+      width: 100%;
+      display: block;
+      border-radius: 10px;
+      background: #111827;
+    }
+
+    .side h3 {
+      margin-top: 0;
+    }
+
+    .leader {
+      display: flex;
+      justify-content: space-between;
+      padding: 9px 0;
+      border-bottom: 1px solid #29334d;
+    }
+
+    .me {
+      font-weight: 800;
+    }
+
+    .finished {
+      padding: 12px;
+      background: #203a2b;
+      border: 1px solid #3d7750;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #9ca9c8;
+      line-height: 1.5;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid #29334d;
+      margin: 18px 0;
+    }
+
+    @media (max-width: 800px) {
+      .game {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        order: -1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+
+    <!-- =========================
+         HEADER
+    ========================== -->
+
+    <div class="top">
+
+      <div class="brand">
+        🪙 Coin Rush
+      </div>
+
+      <div id="status" class="status">
+        Not connected
+      </div>
+
+    </div>
+
+
+    <!-- =========================
+         JOIN SCREEN
+    ========================== -->
+
+    <div id="join" class="panel join">
+
+      <h1>
+        Join Game
+      </h1>
+
+      <p class="hint">
+        Enter a username and room ID.
+        Open this page in 2+ browser tabs
+        to test multiplayer.
+      </p>
+
+
+      <div class="row">
+
+        <input
+          id="username"
+          maxlength="20"
+          placeholder="Username"
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <div class="row">
+
+        <input
+          id="room"
+          maxlength="30"
+          value="main"
+          placeholder="Room ID"
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <button
+        id="joinBtn"
+        type="button"
+      >
+        Join Game
+      </button>
+
+
+      <div
+        id="error"
+        class="error"
+      ></div>
+
+    </div>
+
+
+    <!-- =========================
+         GAME SCREEN
+    ========================== -->
+
+    <div
+      id="game"
+      class="game"
+      hidden
+    >
+
+      <!-- GAME WORLD -->
+
+      <div class="canvasWrap">
+
+        <canvas
+          id="canvas"
+          class="gamecanvas"
+          width="900"
+          height="600"
+        ></canvas>
+
+
+        <p class="hint">
+
+          Move with
+          <b>WASD</b>
+          /
+          <b>Arrow Keys</b>.
+
+          Collect 🪙.
+
+          The server owns movement,
+          collisions and scores.
+
+        </p>
+
+      </div>
+
+
+      <!-- SIDEBAR -->
+
+      <div class="side panel">
+
+        <div id="finished"></div>
+
+
+        <h3>
+          Leaderboard
+        </h3>
+
+
+        <div id="leaderboard"></div>
+
+
+        <hr>
+
+
+        <p class="hint">
+
+          Room:
+          <b id="roomLabel"></b>
+
+        </p>
+
+
+        <button
+          id="restart"
+          type="button"
+          hidden
+        >
+          New Game
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================
+       SOCKET.IO CLIENT
+  ========================== -->
+
+  <script src="/socket.io/socket.io.js"></script>
+
+
+  <script>
+
+    // ============================================================
+    // 1. SOCKET CONNECTION
+    // ============================================================
+
+    const socket = io();
+
+
+    // ============================================================
+    // 2. GAME VARIABLES
+    // ============================================================
+
+    let state = null;
+
+    let joined = false;
+
+
+    // ============================================================
+    // 3. DOM ELEMENTS
+    // ============================================================
+
+    const canvas =
+      document.getElementById("canvas");
+
+    const ctx =
+      canvas.getContext("2d");
+
+
+    const join =
+      document.getElementById("join");
+
+    const game =
+      document.getElementById("game");
+
+
+    const error =
+      document.getElementById("error");
+
+    const status =
+      document.getElementById("status");
+
+
+    const usernameInput =
+      document.getElementById("username");
+
+    const roomInput =
+      document.getElementById("room");
+
+
+    const joinButton =
+      document.getElementById("joinBtn");
+
+
+    const roomLabel =
+      document.getElementById("roomLabel");
+
+
+    const leaderboard =
+      document.getElementById("leaderboard");
+
+
+    const finished =
+      document.getElementById("finished");
+
+
+    const restartButton =
+      document.getElementById("restart");
+
+
+    // ============================================================
+    // 4. PLAYER INPUT
+    // ============================================================
+
+    const keys = {
+
+      up: false,
+
+      down: false,
+
+      left: false,
+
+      right: false
+
+    };
+
+
+    const keyMap = {
+
+      w: "up",
+
+      W: "up",
+
+      ArrowUp: "up",
+
+
+      s: "down",
+
+      S: "down",
+
+      ArrowDown: "down",
+
+
+      a: "left",
+
+      A: "left",
+
+      ArrowLeft: "left",
+
+
+      d: "right",
+
+      D: "right",
+
+      ArrowRight: "right"
+
+    };
+
+
+    // ============================================================
+    // 5. JOIN GAME
+    // ============================================================
+
+    joinButton.addEventListener(
+      "click",
+      () => {
+
+        error.textContent = "";
+
+
+        const username =
+          usernameInput.value.trim();
+
+
+        const roomId =
+          roomInput.value.trim();
+
+
+        // Validate username
+
+        if (!username) {
+
+          error.textContent =
+            "Please enter a username.";
+
+          return;
+
+        }
+
+
+        // Validate room
+
+        if (!roomId) {
+
+          error.textContent =
+            "Please enter a room ID.";
+
+          return;
+
+        }
+
+
+        joinButton.disabled = true;
+
+        joinButton.textContent =
+          "Joining...";
+
+
+        // Send join request to server
+
+        socket.emit(
+
+          "room:join",
+
+          {
+            username: username,
+            roomId: roomId
+          },
+
+          (response) => {
+
+            // Enable button again
+
+            joinButton.disabled = false;
+
+            joinButton.textContent =
+              "Join Game";
+
+
+            // Server returned error
+
+            if (
+              !response ||
+              !response.ok
+            ) {
+
+              error.textContent =
+                response?.error ||
+                "Unable to join the game.";
+
+              return;
+
+            }
+
+
+            // Successfully joined
+
+            joined = true;
+
+
+            join.hidden = true;
+
+            game.hidden = false;
+
+
+            roomLabel.textContent =
+              response.roomId;
+
+
+            status.textContent =
+              "Connected · " +
+              response.playerId.slice(0, 6);
+
+          }
+
+        );
+
+      }
+    );
+
+
+    // ============================================================
+    // 6. KEYBOARD - KEY DOWN
+    // ============================================================
+
+    window.addEventListener(
+      "keydown",
+      (event) => {
+
+        const direction =
+          keyMap[event.key];
+
+
+        if (
+          !direction ||
+          !joined
+        ) {
+
+          return;
+
+        }
+
+
+        keys[direction] = true;
+
+
+        socket.emit(
+          "player:input",
+          {
+            ...keys
+          }
+        );
+
+
+        event.preventDefault();
+
+      }
+    );
+
+
+    // ============================================================
+    // 7. KEYBOARD - KEY UP
+    // ============================================================
+
+    window.addEventListener(
+      "keyup",
+      (event) => {
+
+        const direction =
+          keyMap[event.key];
+
+
+        if (
+          !direction ||
+          !joined
+        ) {
+
+          return;
+
+        }
+
+
+        keys[direction] = false;
+
+
+        socket.emit(
+          "player:input",
+          {
+            ...keys
+          }
+        );
+
+
+        event.preventDefault();
+
+      }
+    );
+
+
+    // ============================================================
+    // 8. SOCKET CONNECT
+    // ============================================================
+
+    socket.on(
+      "connect",
+      () => {
+
+        status.textContent =
+          "Connected · waiting to join";
+
+      }
+    );
+
+
+    // ============================================================
+    // 9. SOCKET DISCONNECT
+    // ============================================================
+
+    socket.on(
+      "disconnect",
+      () => {
+
+        status.textContent =
+          "Disconnected";
+
+      }
+    );
+
+
+    // ============================================================
+    // 10. GAME STATE
+    // ============================================================
+
+    socket.on(
+      "game:state",
+      (newState) => {
+
+        state = newState;
+
+
+        render();
+
+
+        updateLeaderboard();
+
+      }
+    );
+
+
+    // ============================================================
+    // 11. GAME OVER
+    // ============================================================
+
+    socket.on(
+      "game:over",
+      () => {
+
+        finished.innerHTML = `
+
+          <div class="finished">
+
+            <b>
+              🏆 Game Over!
+            </b>
+
+            <br>
+
+            All collectibles collected.
+
+          </div>
+
+        `;
+
+
+        restartButton.hidden =
+          false;
+
+      }
+    );
+
+
+    // ============================================================
+    // 12. RESTART GAME
+    // ============================================================
+
+    restartButton.addEventListener(
+      "click",
+      () => {
+
+        socket.emit(
+          "game:restart",
+          {},
+          () => {
+
+            restartButton.hidden =
+              true;
+
+            finished.innerHTML =
+              "";
+
+          }
+        );
+
+      }
+    );
+
+
+    // ============================================================
+    // 13. UPDATE LEADERBOARD
+    // ============================================================
+
+    function updateLeaderboard() {
+
+      if (
+        !state ||
+        !Array.isArray(state.leaderboard)
+      ) {
+
+        return;
+
+      }
+
+
+      leaderboard.innerHTML =
+        state.leaderboard
+
+          .map(
+            (player, index) => {
+
+              const isMe =
+                player.id === socket.id;
+
+
+              return `
+
+                <div
+                  class="leader ${isMe ? "me" : ""}"
+                >
+
+                  <span>
+
+                    ${index + 1}.
+                    ${escapeHtml(
+                      player.username
+                    )}
+
+                  </span>
+
+
+                  <b>
+
+                    ${player.score}
+
+                  </b>
+
+                </div>
+
+              `;
+
+            }
+          )
+
+          .join("");
+
+    }
+
+
+    // ============================================================
+    // 14. ESCAPE HTML
+    // ============================================================
+
+    function escapeHtml(value) {
+
+      return String(value).replace(
+
+        /[&<>'"]/g,
+
+        (character) => {
+
+          const entities = {
+
+            "&": "&amp;",
+
+            "<": "&lt;",
+
+            ">": "&gt;",
+
+            "'": "&#39;",
+
+            '"': "&quot;"
+
+          };
+
+
+          return entities[character];
+
+        }
+
+      );
+
+    }
+
+
+    // ============================================================
+    // 15. RENDER GAME
+    // ============================================================
+
+    function render() {
+
+      if (!state) {
+
+        return;
+
+      }
+
+
+      // Clear canvas
+
+      ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+
+      // Background
+
+      ctx.fillStyle =
+        "#111827";
+
+
+      ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+
+      // ==========================================================
+      // GAME GRID
+      // ==========================================================
+
+      ctx.strokeStyle =
+        "#26314a";
+
+
+      ctx.lineWidth = 1;
+
+
+      for (
+        let x = 0;
+        x <= 900;
+        x += 50
+      ) {
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          x,
+          0
+        );
+
+        ctx.lineTo(
+          x,
+          600
+        );
+
+        ctx.stroke();
+
+      }
+
+
+      for (
+        let y = 0;
+        y <= 600;
+        y += 50
+      ) {
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          0,
+          y
+        );
+
+        ctx.lineTo(
+          900,
+          y
+        );
+
+        ctx.stroke();
+
+      }
+
+
+      // ==========================================================
+      // COLLECTIBLES
+      // ==========================================================
+
+      if (
+        Array.isArray(
+          state.collectibles
+        )
+      ) {
+
+        state.collectibles.forEach(
+          (collectible) => {
+
+            ctx.beginPath();
+
+
+            ctx.arc(
+
+              collectible.x,
+
+              collectible.y,
+
+              12,
+
+              0,
+
+              Math.PI * 2
+
+            );
+
+
+            ctx.fillStyle =
+              "#f7c948";
+
+
+            ctx.fill();
+
+
+            ctx.strokeStyle =
+              "#fff0a6";
+
+
+            ctx.stroke();
+
+          }
+        );
+
+      }
+
+
+      // ==========================================================
+      // PLAYERS
+      // ==========================================================
+
+      if (
+        Array.isArray(
+          state.players
+        )
+      ) {
+
+        state.players.forEach(
+          (player) => {
+
+            const isMe =
+              player.id === socket.id;
+
+
+            // Player body
+
+            ctx.beginPath();
+
+
+            ctx.arc(
+
+              player.x,
+
+              player.y,
+
+              18,
+
+              0,
+
+              Math.PI * 2
+
+            );
+
+
+            ctx.fillStyle =
+              isMe
+                ? "#55a6ff"
+                : "#ff6b81";
+
+
+            ctx.fill();
+
+
+            ctx.strokeStyle =
+              "#ffffff";
+
+
+            ctx.stroke();
+
+
+            // Username
+
+            ctx.fillStyle =
+              "#ffffff";
+
+
+            ctx.font =
+              "bold 13px Arial";
+
+
+            ctx.textAlign =
+              "center";
+
+
+            ctx.fillText(
+
+              player.username,
+
+              player.x,
+
+              player.y - 27
+
+            );
+
+
+            // Score
+
+            ctx.font =
+              "12px Arial";
+
+
+            ctx.fillText(
+
+              String(player.score),
+
+              player.x,
+
+              player.y + 4
+
+            );
+
+          }
+        );
+
+      }
+
+    }
+
+  </script>
+
+</body>
+</html>
